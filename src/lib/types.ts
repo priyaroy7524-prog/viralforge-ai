@@ -1,0 +1,12 @@
+export type Platform = "Instagram" | "LinkedIn" | "X" | "TikTok";
+export type PostType = "post" | "reel" | "carousel" | "story";
+export type Status = "idea" | "draft" | "scheduled" | "published";
+export type Tone = "Confident" | "Playful" | "Professional" | "Friendly" | "Bold";
+export type Workspace = { id: string; name: string; industry: string; tone: Tone; color: string; createdAt: string };
+export type ContentPost = { id: string; workspaceId: string; title: string; caption: string; hook: string; platform: Platform; type: PostType; status: Status; scheduledFor: string | null; tags: string[]; createdAt: string; updatedAt: string };
+export type PostPayload = Omit<ContentPost, "id" | "createdAt" | "updatedAt">;
+export type UserInfo = { userId: string; name: string; email: string };
+export const platforms: Platform[] = ["Instagram", "LinkedIn", "X", "TikTok"];
+export const statuses: Status[] = ["idea", "draft", "scheduled", "published"];
+export const types: PostType[] = ["post", "reel", "carousel", "story"];
+export const tones: Tone[] = ["Confident", "Playful", "Professional", "Friendly", "Bold"];

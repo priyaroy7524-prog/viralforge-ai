@@ -1,0 +1,35 @@
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { format, isAfter, parseISO, subDays, startOfDay } from "date-fns";
+import { ArrowRight, CalendarClock, CheckCheck, FileText, Lightbulb, Plus, Sparkles, TrendingUp, ArrowUpRight, LayoutGrid } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { useApp } from "@/components/AppProvider";
+import PostEditor from "@/components/PostEditor";
+import { PageHeading, PanelHeading, StatusBadge, PlatformBadge } from "@/components/UI";
+export default function DashboardPage() {
+  const { posts, workspace, workspaces, loading } = useApp();
+  const [newOpen, setNewOpen] = useState(false);
+  const counts = { ideas: posts.filter((p) => p.status === "idea").length, drafts: posts.filter((p) => p.status === "draft").length, scheduled: posts.filter((p) => p.status === "scheduled").length, published: posts.filter((p) => p.status === "published").length };
+  const trend = Array.from({length: 7}, (_,i) => {
+    const day = startOfDay(subDays(new Date(), 6 - i));
+    const count = posts.filter((p) => startOfDay(parseISO(p.createdAt)).getTime() === day.getTime()).length;
+    return { day: format(day, "EEE"), Posts: count };
+  });
+  const upcoming = posts.filter((p) => p.scheduledFor && isAfter(parseISO(p.scheduledFor), new Date())).sort((a,b) => (a.scheduledFor || "").localeCompare(b.scheduledFor || "")).slice(0,4);
+  return <><PageHeading eyebrow="YOUR CREATIVE COMMAND CENTER" title={<>Good to have you here <span className="heading-spark">✳</span></>} description={`Here's what's happening${workspace ? ` at ${workspace.name}` : " in your workspace"}. Let's keep things moving.`} action={<button className="button button-primary" onClick={() => setNewOpen(true)}><Plus size={18}/> Create content</button>}/>
+    <div className="dashboard-highlight"><div className="highlight-copy"><div className="highlight-tag"><Sparkles size={15}/> YOUR DAILY SPARK</div><h2>Great ideas don't wait.<br/><span>Neither should you.</span></h2><p>Turn the thing on your mind into something the world can see.</p><Link href="/studio" className="button button-white">Create with AI <ArrowUpRight size={16}/></Link></div><div className="highlight-orb"><span className="orb-ring orb-ring-one"/><span className="orb-ring orb-ring-two"/><span className="orb-core">✳</span><span className="orb-star orb-star-one">✦</span><span className="orb-star orb-star-two">✧</span></div></div>
+    <div className="metric-grid">{[
+      {label: "Total content", value: posts.length, icon: FileText, detail: "All content in this brand"},
+      {label: "Ideas & drafts", value: counts.ideas + counts.drafts, icon: Lightbulb, detail: "Waiting for the next step"},
+      {label: "Scheduled", value: counts.scheduled, icon: CalendarClock, detail: "Planned for later"},
+      {label: "Marked published", value: counts.published, icon: CheckCheck, detail: "Manually tracked"},
+    ].map(({label,value,icon:Icon,detail})=><div className="metric-card" key={label}><div className="metric-head"><span>{label}</span><div className="metric-icon"><Icon size={18}/></div></div><div className="metric-value">{loading ? "—" : String(value).padStart(2,"0")}<span className="metric-spark"><TrendingUp size={16}/></span></div><small>{detail}</small></div>)}</div>
+    <div className="dashboard-grid"><section className="panel"><PanelHeading title="Creative momentum" subtitle="New content created over the last 7 days" link="/analytics" linkText="Explore insights"/><div className="chart-container"><ResponsiveContainer width="100%" height="100%"><AreaChart data={trend} margin={{ top: 16, right: 8, left: 8, bottom: 0 }}><defs><linearGradient id="momentumFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#b79aff" stopOpacity={0.32}/><stop offset="100%" stopColor="#b79aff" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#26313e" strokeDasharray="3 5"/><XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#7f8c9c", fontSize: 11 }} dy={10}/><Tooltip contentStyle={{ background: "#17212b", border: "1px solid #34404e", borderRadius: 12, color: "#fff" }}/><Area type="monotone" dataKey="Posts" stroke="#b79aff" strokeWidth={2.8} fill="url(#momentumFill)" dot={{ fill: "#b79aff", r: 3, strokeWidth: 0 }}/></AreaChart></ResponsiveContainer></div><p className="chart-footnote">Based on content creation dates, not social media impressions.</p></section>
+    <section className="panel"><PanelHeading title="Content pipeline" subtitle="Where your ideas stand right now" link="/content"/><div className="pipeline-list">{[["Ideas",counts.ideas,"#a78bfa"],["Drafts",counts.drafts,"#fbbf24"],["Scheduled",counts.scheduled,"#67e8f9"],["Published",counts.published,"#b79aff"]].map(([label,value,color])=><div key={String(label)} className="pipeline-row"><div className="pipeline-label"><span className="pipeline-dot" style={{ background: String(color) }}/><span>{label}</span><b>{value}</b></div><div className="pipeline-track"><div style={{ width: `${posts.length ? Number(value)/posts.length * 100 : 0}%`, background: String(color) }}/></div></div>)}</div><div className="pipeline-total"><LayoutGrid size={17}/> {posts.length} total pieces of content</div></section></div>
+    <div className="dashboard-grid dashboard-secondary"><section className="panel"><PanelHeading title="Recently created" subtitle="Your latest ideas and drafts" link="/content"/>{posts.length ? <div className="simple-list">{posts.slice(0,4).map((post)=><div className="simple-list-row" key={post.id}><div className="simple-list-icon"><FileText size={18}/></div><div className="simple-list-copy"><strong>{post.title}</strong><span>{post.platform} · {post.type}</span></div><StatusBadge status={post.status}/></div>)}</div> : <div className="mini-empty">No content yet. <Link href="/content?new=1">Add your first idea <ArrowRight size={13}/></Link></div>}</section>
+    <section className="panel"><PanelHeading title="On the horizon" subtitle="Upcoming scheduled content" link="/calendar"/>{upcoming.length ? <div className="simple-list">{upcoming.map((post)=><div className="simple-list-row" key={post.id}><div className="simple-list-date"><strong>{format(parseISO(post.scheduledFor!), "dd")}</strong><span>{format(parseISO(post.scheduledFor!), "MMM")}</span></div><div className="simple-list-copy"><strong>{post.title}</strong><span>{format(parseISO(post.scheduledFor!), "MMM d · h:mm a")}</span></div><PlatformBadge platform={post.platform}/></div>)}</div> : <div className="mini-empty">Nothing planned yet. <Link href="/calendar">Open calendar <ArrowRight size={13}/></Link></div>}</section></div>
+    <PostEditor open={newOpen} onClose={() => setNewOpen(false)}/>
+    <div className="dashboard-footer-note">Your current brand: <strong>{workspace?.name || "No workspace"}</strong> · {workspaces.length} workspace{workspaces.length === 1 ? "" : "s"} · <span>Make your next great thing.</span></div>
+  </>;
+}
